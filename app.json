@@ -29,6 +29,18 @@
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
+    },
+    "hooks": {
+      "postPublish": [
+        {
+          "file": "sentry-expo/upload-sourcemaps",
+          "config": {
+            "organization": "gmrl",
+            "project": "getmereallove",
+            "authToken": "d2d0536a7a654c87814052fdc788e7f932ed54e1409047af8f32bae29d2db593"
+          }
+        }
+      ]
     }
   }
 }
