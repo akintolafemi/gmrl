@@ -5,9 +5,10 @@ import * as React from 'react';
 
 import Colors from '../constants/Colors';
 import useColorScheme from '../hooks/useColorScheme';
-import TabOneScreen from '../screens/TabOneScreen';
-import TabTwoScreen from '../screens/TabTwoScreen';
-import { BottomTabParamList, TabOneParamList, TabTwoParamList } from '../types';
+import LandingScreen from '../screens/landing';
+import FriendsScreen from '../screens/friends';
+import StoriesScreen from '../screens/stories';
+import { BottomTabParamList, LandingParamList, FriendsParamList, StoriesParamList } from '../types';
 
 const BottomTab = createBottomTabNavigator<BottomTabParamList>();
 
@@ -16,20 +17,35 @@ export default function BottomTabNavigator() {
 
   return (
     <BottomTab.Navigator
-      initialRouteName="TabOne"
-      tabBarOptions={{ activeTintColor: Colors[colorScheme].tint }}>
+      initialRouteName="Landing"
+      tabBarOptions={{
+        activeTintColor: Colors.primaryColor,
+        tabStyle: {
+          backgroundColor: Colors.colorWhite
+        }
+      }}>
       <BottomTab.Screen
-        name="TabOne"
-        component={TabOneNavigator}
+        name="Landing"
+        component={LandingNavigator}
         options={{
-          tabBarIcon: ({ color }) => <TabBarIcon name="ios-code" color={color} />,
+          title: 'Home',
+          tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
         }}
       />
       <BottomTab.Screen
-        name="TabTwo"
-        component={TabTwoNavigator}
+        name="Friends"
+        component={FriendsNavigator}
         options={{
-          tabBarIcon: ({ color }) => <TabBarIcon name="ios-code" color={color} />,
+          title: 'Friends',
+          tabBarIcon: ({ color }) => <TabBarIcon name="people" color={color} />,
+        }}
+      />
+      <BottomTab.Screen
+        name="Stories"
+        component={StoriesNavigator}
+        options={{
+          title: 'Stories',
+          tabBarIcon: ({ color }) => <TabBarIcon name="grid" color={color} />,
         }}
       />
     </BottomTab.Navigator>
@@ -39,35 +55,49 @@ export default function BottomTabNavigator() {
 // You can explore the built-in icon families and icons on the web at:
 // https://icons.expo.fyi/
 function TabBarIcon(props: { name: React.ComponentProps<typeof Ionicons>['name']; color: string }) {
-  return <Ionicons size={30} style={{ marginBottom: -3 }} {...props} />;
+  return <Ionicons size={20} style={{ marginBottom: -3 }} {...props} />;
 }
 
 // Each tab has its own navigation stack, you can read more about this pattern here:
 // https://reactnavigation.org/docs/tab-based-navigation#a-stack-navigator-for-each-tab
-const TabOneStack = createStackNavigator<TabOneParamList>();
+const LandingStack = createStackNavigator<LandingParamList>();
 
-function TabOneNavigator() {
+function LandingNavigator() {
   return (
-    <TabOneStack.Navigator>
-      <TabOneStack.Screen
-        name="TabOneScreen"
-        component={TabOneScreen}
-        options={{ headerTitle: 'Tab One Title' }}
+    <LandingStack.Navigator>
+      <LandingStack.Screen
+        name="LandingScreen"
+        component={LandingScreen}
+        options={{ headerShown: false }}
       />
-    </TabOneStack.Navigator>
+    </LandingStack.Navigator>
   );
 }
 
-const TabTwoStack = createStackNavigator<TabTwoParamList>();
+const FriendsStack = createStackNavigator<FriendsParamList>();
 
-function TabTwoNavigator() {
+function FriendsNavigator() {
   return (
-    <TabTwoStack.Navigator>
-      <TabTwoStack.Screen
-        name="TabTwoScreen"
-        component={TabTwoScreen}
+    <FriendsStack.Navigator>
+      <FriendsStack.Screen
+        name="FriendsScreen"
+        component={FriendsScreen}
+        options={{ headerShown: false }}
+      />
+    </FriendsStack.Navigator>
+  );
+}
+
+const StoriesStack = createStackNavigator<StoriesParamList>();
+
+function StoriesNavigator() {
+  return (
+    <StoriesStack.Navigator>
+      <StoriesStack.Screen
+        name="StoriesScreen"
+        component={FriendsScreen}
         options={{ headerTitle: 'Tab Two Title' }}
       />
-    </TabTwoStack.Navigator>
+    </StoriesStack.Navigator>
   );
 }
