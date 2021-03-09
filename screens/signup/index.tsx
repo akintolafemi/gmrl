@@ -63,7 +63,7 @@ export default function SignUpScreen({navigation, route}) {
 
       setIsLoading(false);
       if (confirm.code === "00")
-        navigation.navigate('VerifyMobile', {mobile: mobile, numLock: numLock, confirm: confirm.verificationId});
+        navigation.navigate('VerifyMobile', {mobile: mobile, numLock: numLock, verificationId: confirm.verificationId});
       else
         Alert.alert("Error", confirm.message);
     }
@@ -107,6 +107,7 @@ export default function SignUpScreen({navigation, route}) {
              onChangeText={text => setMobile(text)}
              style={styles.inputStyle}
              returnKeyType="next"
+             keyboardType="phone-pad"
           />
         </Item>
         <Item>

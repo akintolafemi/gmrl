@@ -7,10 +7,13 @@ import LoginScreen from '../screens/login/';
 import SignUpScreen from '../screens/signup/';
 import VerifyScreen from "../screens/signup/VerifyScreen";
 import FinalSetupScreen from "../screens/signup/FinalSetupScreen";
+import SetDPScreen from '../screens/signup/SetDPScreen';
 import ForgotPasswordScreen from '../screens/password/forgotpasswordscreen';
 
 import ChatScreen from '../screens/friends/ChatScreen';
 
+//billing
+import SetupBillingCardScreen from '../screens/billing/SetupBillingCardScreen';
 
 import NotFoundScreen from '../screens/NotFoundScreen';
 import { RootStackParamList } from '../types';
@@ -93,6 +96,34 @@ function RootNavigator() {
         component={ChatScreen}
         options={{
           headerShown: false
+        }}
+        initialParams={{}}
+      />
+      <Stack.Screen
+        name="SetupBillingCard"
+        component={SetupBillingCardScreen}
+        options={{
+          headerShown: true,
+          title: 'Billing Details',
+          headerLeft: null,
+          headerTintColor: Colors.colorDark,
+          headerStyle: {
+            backgroundColor: Colors.colorWhite,
+          },
+        }}
+        initialParams={{}}
+      />
+      <Stack.Screen
+        name="SetDP"
+        component={SetDPScreen}
+        options={{
+          headerShown: true,
+          title: 'Set Display Image',
+          headerLeft: null,
+          headerTintColor: Colors.colorDark,
+          headerStyle: {
+            backgroundColor: Colors.colorWhite,
+          },
         }}
         initialParams={{}}
       />

@@ -16,7 +16,7 @@ import moment from 'moment';
 import { Button as NButton, Picker as Picker, Item, Icon as NIcon } from 'native-base';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 
-export default function FinalSetupScreen({navigation}) {
+export default function FinalSetupScreen({navigation, route}) {
   const colorScheme = useColorScheme();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
@@ -92,16 +92,36 @@ export default function FinalSetupScreen({navigation}) {
 
       setIsLoading(true);
       let response = await API.registerUser(regObj);
-      setIsLoading(false);
       if (response.user) {
         AsyncStorage.removeItem('regObj');
         AsyncStorage.removeItem('gmrl');
-        navigation.navigate('Login');
+        let loginObj = {
+          email: regObj.email,
+          password: regObj.password
+        };
+        let logX = await handleLogin(loginObj);
+        setIsLoading(false);
+        if (logX)
+          navigation.navigate('SetupBillingCard', {email: regObj.email});
+        else
+          navigation.replace("Login");
       }
       else {
         Alert.alert("Error", response);
       }
 
+    }
+  }
+
+  async function handleLogin(loginObj) {
+    const res = await API.login(loginObj);
+    if (res.user) {
+      const profile = await API.getUserProfile();
+      await AsyncStorage.setItem('gmrl', JSON.stringify(profile));
+      return true;
+    }
+    else {
+      return false;
     }
   }
 
