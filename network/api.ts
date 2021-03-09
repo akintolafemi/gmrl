@@ -3,6 +3,8 @@ import {AsyncStorage} from 'react-native';
 import {requestClan} from './requests';
 import * as firebase from 'firebase';
 import FirebaseConfig from '../constants/FirebaseConfig';
+import PaystackConfig from '../constants/PaystackConfig';
+import RNPaystack from 'react-native-paystack';
 
 // Optionally import the services that you want to use
 import "firebase/auth";
@@ -31,6 +33,11 @@ const URL_LOGIN_USERNAME = BASE_URL + '/user/login/username';
 const URL_LOGIN_PASSWORD = BASE_URL + '/user/login/password';
 const URL_VERIFY_USERNAME = BASE_URL + '/user/register/validateusername';
 const URL_REFERRAL = BASE_URL + '/user/referral';
+
+const URL_INITIALIZE_SUBSCRIPTION = 'https://api.paystack.co/transaction/initialize';
+const PAYSTACK_AUTH = "Bearer " + PaystackConfig.secretKey;
+const URL_VERIFY_CHARGE = "https://api.paystack.co/transaction/verify/:";
+
 
 async function login(data: LoginRequest): Promise<any> {
   try {
@@ -362,7 +369,7 @@ async function sendTokenMobile(mobile: string, captchaRef: any): Promise<any> {
     console.log(err);
     let res = {
       code: "01",
-      message: "Sorry, we could not verify your mobile number. Ensure your country code is appended"
+      message: err[0]
     }
     return res;
   }
@@ -375,12 +382,125 @@ async function verifyTokenMobile(data: verifyRequest) {
       data.verificationCode
     );
     await firebase.auth().signInWithCredential(credential);
+
+    await firebase.auth().currentUser.delete();
+
+  // user.delete().then(function() {
+  //   // User deleted.
+  // }).catch(function(error) {
+  //   // An error happened.
+  // });
     return true;
   }
   catch (error){
-    console.lg(error);
+    console.log(error);
     return false;
   }
+}
+
+function initPaystackSubscription(data: initRequest): Promise<Any>{
+  return new Promise((resolve, reject) => {
+    console.log(data);
+
+    try{
+      fetch(URL_INITIALIZE_SUBSCRIPTION, {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+    		  "Authorization": PAYSTACK_AUTH
+        },
+        body: JSON.stringify(data)
+      })
+        .then((response) => response.json())
+        .then(json => {
+            resolve(json);
+        })
+        .catch(error => {
+          console.log(error);
+          reject(new Error(error));
+        })
+    }
+    catch(err) {
+      console.log(err);
+      reject(new Error(error));
+    }
+    return;
+  });
+}
+
+function chargeCardPaystack(data: chargeRequest): Promise<Any>{
+  return new Promise((resolve, reject) => {
+    try {
+      RNPaystack.init({
+        publicKey: PaystackConfig.publicKey
+      });
+      RNPaystack.chargeCardWithAccessCode(data)
+    	.then(response => {
+    	  console.log("charge response: ", response); // do stuff with the token
+        resolve(response);
+    	})
+    	.catch(error => {
+    	  console.log(error); // error is a javascript Error object
+    	  console.log(error.message);
+    	  console.log(error.code);
+        reject(new Error(error));
+    	})
+    }
+    catch(err) {
+      console.log(err);
+      reject(new Error(err));
+    }
+    return;
+  });
+}
+
+function verifyPaystackCharge(reference: string): Promise<Any>{
+  return new Promise((resolve, reject) => {
+    try{
+      fetch(URL_VERIFY_CHARGE + reference, {
+        method: 'GET',
+        headers: {
+          "Content-Type": "application/json",
+    		  "Authorization": PAYSTACK_AUTH
+        }
+      })
+        .then((response) => {
+            console.log("verify res: ", response);
+            resolve(response);
+        })
+        .catch(error => {
+          console.log(error);
+          reject(new Error(error));
+        })
+    }
+    catch(err) {
+      console.log(err);
+      reject(new Error(err));
+    }
+    return;
+  });
+}
+
+async function savePaystackChargeRef(data: saveRequest){
+  return new Promise((resolve, reject) => {
+    try {
+      const currentUser = firebase.auth().currentUser;
+
+      const db = firebase.firestore();
+      db.collection("paystack_payment_references")
+        .doc(data.ref)
+        .set({
+          email: data.email,
+          datetime: new Date(),
+          uid: currentUser.uid
+        });
+      resolve(true);
+    } catch (err) {
+      console.log("There is something wrong!!!!", err.message);
+      reject(false);
+    }
+    return;
+  });
 }
 
 function sendToken(data: TokenRequest): Promise<NetworkResponse> {
@@ -438,5 +558,9 @@ export default {
   updloadDp,
   uriToBlob,
   sendTokenMobile,
-  verifyTokenMobile
+  verifyTokenMobile,
+  initPaystackSubscription,
+  chargeCardPaystack,
+  verifyPaystackCharge,
+  savePaystackChargeRef,
 }
