@@ -7,7 +7,7 @@ import GlobalStyles from '../../constants/GlobalStyles';
 import TitleLabel from '../../components/TitleLabel';
 import Logo from '../../components/Logo';
 import {API} from '../../network';
-import CountrySelect from '../../functions/CountrySelect';
+//import CountrySelect from '../../functions/CountrySelect';
 
 import * as Animatable from 'react-native-animatable';
 import { useColorScheme  } from 'react-native';
@@ -22,11 +22,11 @@ export default function FinalSetupScreen({navigation, route}) {
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [gender, setGender] = useState<string>('M');
   const [genderInterest, setGenderInterest] = useState<string>('men');
-  const [country, setCountry] = useState<number>(168);    //default country Nigeria
-  const [city, setCity] = useState<string>('Lagos');
+  // const [country, setCountry] = useState<number>(168);    //default country Nigeria
+  // const [city, setCity] = useState<string>('Lagos');
   const [dob, setDob] = useState<string>(new Date());
-  const [countryList] = useState(CountrySelect.country_arr);
-  const [cityList, setCityList] = useState<Array>(CountrySelect.fetchCities(169)); //default Nigerian states
+  // const [countryList] = useState(CountrySelect.country_arr);
+  // const [cityList, setCityList] = useState<Array>(CountrySelect.fetchCities(169)); //default Nigerian states
 
   useEffect(() => {
   }, []);
@@ -70,10 +70,10 @@ export default function FinalSetupScreen({navigation, route}) {
       Alert.alert("Error", "Invalid date of birth");
     else if (diff < 13)
       Alert.alert("Error", "You are too young to be on this app, come back in a few years time");
-    else if (country === "" || country === 0)
-      Alert.alert("Error", "Select your country to continue");
-    else if (city === "")
-      Alert.alert("Error", "Select your state or city to continue");
+    // else if (country === "" || country === 0)
+    //   Alert.alert("Error", "Select your country to continue");
+    // else if (city === "")
+    //   Alert.alert("Error", "Select your state or city to continue");
     else {
       let regObj = await AsyncStorage.getItem('regObj');
 
@@ -86,8 +86,8 @@ export default function FinalSetupScreen({navigation, route}) {
       regObj.dob = dob;
       regObj.gender = gender;
       regObj.genderInterest = genderInterest;
-      regObj.country = countryList[country];
-      regObj.city = city;
+      //regObj.country = countryList[country];
+      //regObj.city = city;
       regObj.photoURL = photoURL;
 
       setIsLoading(true);
@@ -102,7 +102,7 @@ export default function FinalSetupScreen({navigation, route}) {
         let logX = await handleLogin(loginObj);
         setIsLoading(false);
         if (logX)
-          navigation.navigate('SetupBillingCard', {email: regObj.email});
+          navigation.navigate('Subscribe', {email: regObj.email});
         else
           navigation.replace("Login");
       }
@@ -199,7 +199,7 @@ export default function FinalSetupScreen({navigation, route}) {
             })}
           </Picker>
         </View>
-        <View
+        {/*<View
           style={styles.rowView}
         >
           <Text>Country: </Text>
@@ -232,7 +232,7 @@ export default function FinalSetupScreen({navigation, route}) {
               return (< Picker.Item label={item} value={item} key={index.toString()} />);
             })}
           </Picker>
-        </View>
+        </View>*/}
         <NButton
           block
           disabled={isLoading}
