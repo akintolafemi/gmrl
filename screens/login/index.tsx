@@ -182,7 +182,7 @@ export default function LoginScreen({navigation, route}) {
           <View style={{flexDirection: 'row', marginTop: 5}}>
             <Text>Don't have an account?</Text>
             <TouchableOpacity
-              onPress={() => navigation.navigate('SetupBillingCard')}
+              onPress={() => navigation.navigate('Signup')}
             >
               <Text style={{color: Colors.primaryColor}}> Sign Up</Text>
             </TouchableOpacity>

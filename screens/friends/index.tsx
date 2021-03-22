@@ -39,6 +39,7 @@ export default function FriendsScreen({navigation, route}) {
         if (data !== null) {
           setProfile(data)
           setDob(ToDateTime(data.dob.seconds));
+          setConnectionList(data.connectionsList);
         }
         else {
           navigation.replace('Login');
@@ -62,13 +63,13 @@ export default function FriendsScreen({navigation, route}) {
           <Avatar
             rounded
             source={{
-              uri: 'https://randomuser.me/api/portraits/men/41.jpg',
+              uri: profile.photoURL,
             }}
             size="small"
           />
         }
         centerComponent={
-          <Text style={{fontWeight: 'bold', fontSize: 15, color: Colors.colorWhite}}>GMRL</Text>
+          <Text style={{fontWeight: 'bold', fontSize: 15, color: Colors.colorWhite}}>{profile.displayName}</Text>
         }
         containerStyle={{
           height: 100,

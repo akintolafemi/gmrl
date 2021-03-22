@@ -33,6 +33,7 @@ export default function LandingScreen({navigation, route}) {
   const [imageModal, setImageModal] = useState<boolean>(false);
   const [imageCropper, setImageCropper] = useState<boolean>(false);
   const [cropperUri, setCropperUri] = useState<string>('');
+  const [friendsLength, setFriendsLength] = useState(0);
 
   useEffect(() => {
 
@@ -40,7 +41,10 @@ export default function LandingScreen({navigation, route}) {
       if (API.isUser()) {
         useProfile().then((data) => {
           if (data !== null) {
+            console.log(data);
+
             setProfile(data);
+            setFriendsLength(data.connectionsList.length);
             setDob(ToDateTime(data.dob.seconds));
           }
           else {
@@ -86,7 +90,7 @@ export default function LandingScreen({navigation, route}) {
     {
       title: 'Friends',
       icon: 'people-outline',
-      count: profile.profileFriends
+      count: friendsLength
     },
     {
       title: 'Age',
@@ -101,15 +105,14 @@ export default function LandingScreen({navigation, route}) {
   ]
 
   async function handleLogout() {
-    WModal.show({
-      data: 'Login out...',
-      textColor: Colors.primaryColor,
-      backgroundColor: Colors.colorWhite,
-      position: WModal.position.CENTER,
-      icon: <ActivityIndicator color={Colors.primaryColor} size={'medium'}/>
-    })
+    // WModal.show({
+    //   data: 'Login out...',
+    //   textColor: Colors.primaryColor,
+    //   backgroundColor: Colors.colorWhite,
+    //   position: WModal.position.CENTER,
+    //   icon: <ActivityIndicator color={Colors.primaryColor} size={'medium'}/>
+    // })
     let res = await API.logout();
-    WModal.hide();
     if (res === "signedout")
       navigation.navigate('Login');
     else

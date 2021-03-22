@@ -22,7 +22,6 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.fmj.gmrl",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"

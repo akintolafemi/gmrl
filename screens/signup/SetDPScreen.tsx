@@ -52,12 +52,15 @@ export default function SetDPScreen({navigation, route}) {
       setIsLoading(true);
       let file = selectedImg;
       let res = await API.updloadDp(file);
+      console.log("res", res);
+
       if (res !== ""){
         let profile = await useProfile();
         profile.photoURL = res;
         await updateProfile(profile);
       }
       setIsLoading(false);
+      Alert.alert("Cool", "You are doing well!");
       navigation.replace("Login");
     }
   }

@@ -95,8 +95,8 @@ function StoriesNavigator() {
     <StoriesStack.Navigator>
       <StoriesStack.Screen
         name="StoriesScreen"
-        component={FriendsScreen}
-        options={{ headerTitle: 'Tab Two Title' }}
+        component={StoriesScreen}
+        options={{ headerShown: false }}
       />
     </StoriesStack.Navigator>
   );

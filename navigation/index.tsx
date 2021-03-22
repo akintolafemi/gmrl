@@ -14,6 +14,7 @@ import ChatScreen from '../screens/friends/ChatScreen';
 
 //billing
 import SetupBillingCardScreen from '../screens/billing/SetupBillingCardScreen';
+import SubscribeScreen from '../screens/billing/SubscribeScreen';
 
 import NotFoundScreen from '../screens/NotFoundScreen';
 import { RootStackParamList } from '../types';
@@ -105,6 +106,20 @@ function RootNavigator() {
         options={{
           headerShown: true,
           title: 'Billing Details',
+          headerLeft: null,
+          headerTintColor: Colors.colorDark,
+          headerStyle: {
+            backgroundColor: Colors.colorWhite,
+          },
+        }}
+        initialParams={{}}
+      />
+      <Stack.Screen
+        name="Subscribe"
+        component={SubscribeScreen}
+        options={{
+          headerShown: true,
+          title: 'Subscribe',
           headerLeft: null,
           headerTintColor: Colors.colorDark,
           headerStyle: {

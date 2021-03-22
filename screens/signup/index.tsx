@@ -7,10 +7,12 @@ import {API} from '../../network';
 import FX from '../../functions';
 
 import Logo from '../../components/Logo';
+import CountrySelect from '../../functions/CountrySelect';
+import CountryCodeSelect from '../../functions/CountryCodeSelect';
 
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { Input as RNEInput, Button as RNEButton, SocialIcon } from 'react-native-elements';
-import { Button as NButton, Item, Icon as NIcon, Input as NInput } from 'native-base';
+import { Button as NButton, Item, Icon as NIcon, Input as NInput, Picker as Picker } from 'native-base';
 import { FirebaseRecaptchaVerifierModal, FirebaseRecaptchaBanner } from 'expo-firebase-recaptcha';
 
 export default function SignUpScreen({navigation, route}) {
@@ -21,6 +23,10 @@ export default function SignUpScreen({navigation, route}) {
   const [fullname, setFullname] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
+  const [country, setCountry] = useState<number>(168);    //default country Nigeria
+  const [city, setCity] = useState<string>('Lagos');
+  const [countryList] = useState(CountrySelect.country_arr);
+  const [cityList, setCityList] = useState<Array>(CountrySelect.fetchCities(169)); //default Nigerian states
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { width: windowWidth } = useWindowDimensions();
   const attemptInvisibleVerification = false;
@@ -45,18 +51,34 @@ export default function SignUpScreen({navigation, route}) {
       Alert.alert("Error", "Password strength too low");
     else if (confirmPassword !== password)
       Alert.alert("Error", "Confirm password is empty or does not match")
+    else if (country === "" || country === 0)
+      Alert.alert("Error", "Select your country to continue");
+    else if (city === "")
+      Alert.alert("Error", "Select your state or city to continue");
     else {
+      let codes = CountryCodeSelect.getCodes(countryList[country]);
+      let mobileX = mobile;
+      if (mobileX.charAt(0) === '0') {
+        mobileX = mobileX.substr(1, mobileX.length - 1);
+        let dial_code = codes.dial_code;
+        mobileX = dial_code.concat(mobileX);
+      }
+      else if (mobileX.charAt(0) !== '+' && mobileX.charAt(0) !== '0') {
+        mobileX = '+'.concat(mobileX);
+      }
       let regObj = {
         email: email,
         username: username,
         password: password,
         fullname: fullname,
-        mobile: mobile
+        mobile: mobileX,
+        country: countryList[country],
+        city: city
       };
       setIsLoading(true);
       await AsyncStorage.setItem('regObj', JSON.stringify(regObj))
-      let numLock = mobile.substr(mobile.length - 5, mobile.length - 1);
-      console.log(mobile);
+      let numLock = mobile.substr(mobileX.length - 5, mobileX.length - 1);
+      console.log(mobileX);
 
       let confirm = await API.sendTokenMobile(mobile, captchaRef.current);
       console.log(confirm);
@@ -68,6 +90,12 @@ export default function SignUpScreen({navigation, route}) {
         Alert.alert("Error", confirm.message);
     }
 //    navigation.navigate('VerifyMail');
+  }
+
+  function handleCountrySelect(selectedIndex: number) {
+    setCity('');
+    setCountry(selectedIndex);
+    setCityList(CountrySelect.fetchCities(selectedIndex + 1));
   }
 
   return (
@@ -144,6 +172,38 @@ export default function SignUpScreen({navigation, route}) {
              returnKeyType="done"
              keyboardType='default'
           />
+        </Item>
+        <Item>
+          <NIcon name='globe' type="FontAwesome" style={styles.iconStyle} />
+          <Picker
+            mode="dropdown"
+            iosHeader="Country"
+            //iosIcon={<NIcon name="caret-down" style={{fontSize: 14}} />}
+            style={{  }}
+            textStyle={{fontSize: 12}}
+            selectedValue={country}
+            onValueChange={handleCountrySelect}
+          >
+            {countryList.map((item, index) => {
+              return (< Picker.Item label={item} value={index} key={index.toString()} />);
+            })}
+          </Picker>
+        </Item>
+        <Item>
+          <NIcon name='building' type="FontAwesome" style={styles.iconStyle} />
+          <Picker
+            mode="dropdown"
+            iosHeader="State/City"
+            //iosIcon={<NIcon name="caret-down" style={{fontSize: 14}} />}
+            style={{  }}
+            textStyle={{fontSize: 12}}
+            selectedValue={city}
+            onValueChange={value => setCity(value)}
+          >
+            {cityList.map((item, index) => {
+              return (< Picker.Item label={item} value={item} key={index.toString()} />);
+            })}
+          </Picker>
         </Item>
         <NButton
           block

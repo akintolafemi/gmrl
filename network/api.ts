@@ -2,6 +2,7 @@ import {NetworkResponse, LoginResponse, ReferralResponse} from '../interfaces/gl
 import {AsyncStorage} from 'react-native';
 import {requestClan} from './requests';
 import * as firebase from 'firebase';
+//import * as admin from 'firebase-admin';
 import FirebaseConfig from '../constants/FirebaseConfig';
 import PaystackConfig from '../constants/PaystackConfig';
 import RNPaystack from 'react-native-paystack';
@@ -12,6 +13,7 @@ import "firebase/database";
 import "firebase/firestore";
 import "firebase/functions";
 import "firebase/storage";
+import "firebase/"
 
 // Initialize Firebase
 
@@ -127,8 +129,8 @@ async function getConnections(): Promise<any> {
       .firestore()
       .collection('profiles')
       .doc(currentUserUID)
-      .collection('connections')
-      .get();
+      .get('connectionsList');
+//      .get();
 
   return connections.docs.map(doc => doc.data());
 }
@@ -157,7 +159,8 @@ async function registerUser(data: RegisterRequest): Promise<any> {
           country: data.country,
           city: data.city,
           profileLikes: 0,
-          profileFriends: 0
+          connectionsList: [],
+          subscriptionHistory: []
         });
 
       db.collection("billing_infos")
@@ -194,18 +197,39 @@ async function registerUser(data: RegisterRequest): Promise<any> {
   }
 }
 
-async function getChats(owner): Promise<any> {
-  let currentUserUID = firebase.auth().currentUser.uid;
+async function getChats(messageThreadId): Promise<any> {
+  try {
+    let chats = await firebase
+        .firestore()
+        .collection('message_threads')
+        .doc(messageThreadId)
+        .get();
 
-  let chats = await firebase
-      .firestore()
-      .collection('message_threads')
-      .where('_id', '==', currentUserUID)
-      .where('owner', '==', owner)
-      .get();
+    let chatsObj = chats.data();
+    return chatsObj.chats;
+  }
+  catch (err) {
+    console.log(err);
+    return [];
+  }
+}
 
-  let chatsObj = chats.docs.map(doc => doc.data());
-  return chatsObj;
+async function updateChats(data: updateChatsRequest): Promise<Any> {
+  try{
+    const chatRef = firebase.firestore().collection('message_threads').doc(data.messageThreadId);
+
+    let obj = data.messageObj;
+    //obj.sent = true;
+
+    await chatRef.update({
+      chats: firebase.firestore.FieldValue.arrayUnion(obj)
+    });
+    return true;
+  }
+  catch(err) {
+    console.log(err);
+    return false;
+  }
 }
 
 function getChatsUpdated(owner): Promise<any> {
@@ -503,6 +527,28 @@ async function savePaystackChargeRef(data: saveRequest){
   });
 }
 
+async function addSubscription(data: addSubscriptionRequest): Promise<Any> {
+  let currentUserUID = firebase.auth().currentUser.uid;
+  try{
+    const subRef = firebase.firestore().collection('profiles').doc(currentUserUID);
+
+    await subRef.update({
+      subscriptionHistory: firebase.firestore.FieldValue.arrayUnion(data)
+    });
+
+    // firebase
+    //   .firestore()
+    //   .collection('profiles')
+    //   .doc(currentUserUID)
+    //   .update({subscriptionHistory: data});
+    return true;
+  }
+  catch(err) {
+    console.log(err);
+    return false;
+  }
+}
+
 function sendToken(data: TokenRequest): Promise<NetworkResponse> {
   return requestClan({
     data,
@@ -563,4 +609,6 @@ export default {
   chargeCardPaystack,
   verifyPaystackCharge,
   savePaystackChargeRef,
+  addSubscription,
+  updateChats,
 }
