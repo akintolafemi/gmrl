@@ -23,7 +23,7 @@ export default function LoginScreen({navigation, route}) {
   useEffect(() => {
 
     navigation.addListener('focus', () => {
-      if (API.isUser()) {
+    //  if (API.isUser()) {
         useProfile().then((data) => {
           if (data !== null) {
             setProfile(data)
@@ -31,7 +31,7 @@ export default function LoginScreen({navigation, route}) {
             setDisplayName(data.displayName)
           }
         });
-      }
+    //  }
     });
 
   }, [navigation]);

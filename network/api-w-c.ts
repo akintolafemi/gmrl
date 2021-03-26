@@ -30,6 +30,8 @@ if (!firebase.apps.length) {
 
 const BASE_URL = 'http://192.168.43.121:3000';
 const URL_REGISTER = BASE_URL + '/user/register';
+const URL_REGISTER_CONNECTYCUBE = BASE_URL + '/user/registeronconnectycube';
+const URL_LOGIN_CONNECTYCUBE = BASE_URL + '/user/loginonconnectycube';
 const URL_SEND_TOKEN = BASE_URL + '/user/token';
 const URL_VERIFY_TOKEN = BASE_URL + '/user/token/verify';
 const URL_LOGIN_USERNAME = BASE_URL + '/user/login/username';
@@ -44,9 +46,25 @@ const URL_VERIFY_CHARGE = "https://api.paystack.co/transaction/verify/:";
 
 async function login(data: LoginRequest): Promise<any> {
   try {
-    const response = await firebase
+    let con = await requestClan({
+      data,
+      type: 'POST',
+      route: URL_LOGIN_CONNECTYCUBE,
+      isSecure: true,
+    });
+
+    console.log(con);
+
+    let response = await firebase
       .auth()
       .signInWithEmailAndPassword(data.email, data.password);
+
+    if (con.statuscode === 200) {
+      response.connectyCube = con.user;
+    }
+    else {
+      response.connectyCube = {};
+    }
     return response;
   } catch (err) {
     console.log("There is something wrong!", err.message);
@@ -124,107 +142,91 @@ async function getUserBillingInfos(): Promise<any> {
 }
 
 async function getConnections(): Promise<any> {
-  try{
-    let currentUserUID = firebase.auth().currentUser.uid;
+  let currentUserUID = firebase.auth().currentUser.uid;
 
-    let connections = await firebase
-        .firestore()
-        .collection('profiles')
-        .doc(currentUserUID)
-        .get();
-  //      .get();
+  let connections = await firebase
+      .firestore()
+      .collection('profiles')
+      .doc(currentUserUID)
+      .get('connectionsList');
+//      .get();
 
-    let data = connections.data();
-    let cons = data.connectionsList;
-    return cons;
-//    return cons.docs.map(doc => doc.data());
-  }
-  catch(error) {
-    console.log(error);
-    return null;
-  }
-}
-
-async function getUsers(data: fetRequest): Promise<any> {
-  try {
-    console.log(data);
-
-    let currentUserUID = firebase.auth().currentUser.uid;
-
-    let connections = await firebase
-        .firestore()
-        .collection('profiles')
-//        .orderBy('_id')
-//        .whereNotEqualTo("_id", currentUserUID)
-    //    .startAt(data.start)
-  //      .endAt(data.end)
-        .get();
-  //      .get();
-
-    return connections.docs.map(doc => doc.data());
-  }
-  catch(error) {
-    console.log(error);
-    return [];
-  }
+  return connections.docs.map(doc => doc.data());
 }
 
 async function registerUser(data: RegisterRequest): Promise<any> {
   try {
-    const response = await firebase.auth().createUserWithEmailAndPassword(data.email, data.password);
-    const result = await response;
-    if (result.user) {
-      const currentUser = firebase.auth().currentUser;
+    let con = await requestClan({
+      data,
+      type: 'POST',
+      route: URL_REGISTER_CONNECTYCUBE,
+      isSecure: true,
+    });
 
-      const db = firebase.firestore();
-      db.collection("profiles")
-        .doc(currentUser.uid)
-        .set({
-          _id: currentUser.uid,
-          email: currentUser.email,
-          displayName: data.username,
-          phoneNumber: data.mobile,
-          photoURL: data.photoURL,
-          about: '',
-          fullname: data.fullname,
-          dob: data.dob,
-          gender: data.gender,
-          genderInterest: data.genderInterest,
-          country: data.country,
-          city: data.city,
-          profileLikes: 0,
-          connectionsList: [],
-          subscriptionHistory: []
+    console.log(con);
+
+    if (con.statuscode === 200) {
+
+      const response = await firebase.auth().createUserWithEmailAndPassword(data.email, data.password);
+      const result = await response;
+      if (result.user) {
+
+        const currentUser = firebase.auth().currentUser;
+
+        const db = firebase.firestore();
+        db.collection("profiles")
+          .doc(currentUser.uid)
+          .set({
+            _id: currentUser.uid,
+            email: currentUser.email,
+            displayName: data.username,
+            phoneNumber: data.mobile,
+            photoURL: data.photoURL,
+            about: '',
+            fullname: data.fullname,
+            dob: data.dob,
+            gender: data.gender,
+            genderInterest: data.genderInterest,
+            country: data.country,
+            city: data.city,
+            profileLikes: 0,
+            connectionsList: [],
+            subscriptionHistory: [],
+            connectyCube: con.user
+          });
+
+        db.collection("billing_infos")
+          .doc(currentUser.uid)
+          .set({
+            'cards': [{
+
+            }]
+          });
+
+        // db.collection("message_threads")
+        //   .doc(currentUser.uid)
+        //   .set({
+        //     'team@getmereallove.com': [{
+        //       type: 'text',
+        //       content: 'hi/{se}\nThank you for joining Getmereallove',
+        //       targetId: '12345678',
+        //       renderTime: true,
+        //       sendStatus: 1,
+        //       time: new Date()
+        //     }]
+        //   });
+
+        currentUser.sendEmailVerification().then(function() {
+          console.log("Verification mail sent");
+        }).catch(function(error) {
+          console.log(error);
         });
-
-      db.collection("billing_infos")
-        .doc(currentUser.uid)
-        .set({
-          'cards': [{
-
-          }]
-        });
-
-      // db.collection("message_threads")
-      //   .doc(currentUser.uid)
-      //   .set({
-      //     'team@getmereallove.com': [{
-      //       type: 'text',
-      //       content: 'hi/{se}\nThank you for joining Getmereallove',
-      //       targetId: '12345678',
-      //       renderTime: true,
-      //       sendStatus: 1,
-      //       time: new Date()
-      //     }]
-      //   });
-
-      currentUser.sendEmailVerification().then(function() {
-        console.log("Verification mail sent");
-      }).catch(function(error) {
-        console.log(error);
-      });
+      }
+      return response;
     }
-    return response;
+    else {
+      return "Could not register on connectyCube";
+    }
   } catch (err) {
     console.log("There is something wrong!!!!", err.message);
     return err.message;
@@ -258,80 +260,6 @@ async function updateChats(data: updateChatsRequest): Promise<Any> {
     await chatRef.update({
       chats: firebase.firestore.FieldValue.arrayUnion(obj)
     });
-    return true;
-  }
-  catch(err) {
-    console.log(err);
-    return false;
-  }
-}
-
-async function addConnection(data: updateChatsRequest): Promise<Any> {
-  let currentUserUID = firebase.auth().currentUser.uid;
-  try{
-    let addRef = firebase.firestore().collection('profiles').doc(currentUserUID);
-
-    let user = {
-      photoURL: data.connection.photoURL,
-      displayName: data.connection.displayName,
-      location: data.connection.city + ", " + data.connection.country,
-      _id: data.connection._id,
-      email: data.connection.email,
-      phoneNumber: data.connection.phoneNumber
-    };
-
-    await addRef.update({
-      connectionsList: firebase.firestore.FieldValue.arrayUnion(user)
-    });
-
-    addRef = firebase.firestore().collection('profiles').doc(data.connection._id);
-
-    user = {
-      photoURL: data.con.photoURL,
-      displayName: data.con.displayName,
-      location: data.con.city + ", " + data.connection.country,
-      _id: currentUserUID,
-      email: data.con.email,
-      phoneNumber: data.con.phoneNumber
-    };
-
-    await addRef.update({
-      connectionsList: firebase.firestore.FieldValue.arrayUnion(user)
-    })
-
-    await firebase.firestore().collection("message_threads")
-      .doc(data.messageThreadId)
-      .set({
-        '_id': data.messageThreadId,
-        'chats': [],
-        'status': 0,
-        'dateAdded': new Date(),
-        'creator': currentUserUID,
-        'acceptor': data.connection._id
-      });
-
-    // firebase
-    //   .firestore()
-    //   .collection('profiles')
-    //   .doc(currentUserUID)
-    //   .update({subscriptionHistory: data});
-    return true;
-  }
-  catch(err) {
-    console.log(err);
-    return false;
-  }
-}
-
-async function acceptConnection(data: updateChatsRequest): Promise<Any> {
-  let currentUserUID = firebase.auth().currentUser.uid;
-  try{
-    let updateRef = firebase.firestore().collection('message_threads').doc(data);
-
-    await updateRef.update({
-      status: 1
-    });
-
     return true;
   }
   catch(err) {
@@ -719,7 +647,4 @@ export default {
   savePaystackChargeRef,
   addSubscription,
   updateChats,
-  getUsers,
-  addConnection,
-  acceptConnection
 }

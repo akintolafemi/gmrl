@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { AsyncStorage, FlatList, KeyboardAvoidingView, Alert, SafeAreaView, Keyboard, StyleSheet, ScrollView, Animated, useWindowDimensions, Platform, Text, TouchableOpacity, View, Image, TextInput } from 'react-native';
+import { AsyncStorage, FlatList, KeyboardAvoidingView, ActivityIndicator, Alert, SafeAreaView, Keyboard, StyleSheet, ScrollView, Animated, useWindowDimensions, Platform, Text, TouchableOpacity, View, Image, TextInput } from 'react-native';
 import EditScreenInfo from '../../components/EditScreenInfo';
 import * as firebase from 'firebase';
 import "firebase/auth";
@@ -12,6 +12,7 @@ import TitleLabel from '../../components/TitleLabel';
 import ProfileView from '../../components/ProfileView';
 import {API} from '../../network';
 import ToDateTime from '../../functions/ToDateTime';
+import GetThreadId from '../../functions/GetThreadId';
 import useProfile from '../../hooks/useProfile';
 import getChats from '../../hooks/getChats';
 
@@ -39,6 +40,10 @@ export default function ChatScreen({navigation, route}) {
   const currentUserUID = firebase.auth().currentUser.uid;
   const [photoURL, setPhotoURL] = useState<string>('');
   const [deliveryStatus, setDeliveryStatus] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [chatStatus, setChatStatus] = useState<number>(1);
+  const [chatAcceptor, setChatAcceptor] = useState<string>('');
+  const [chatStatusText, setChatStatusText] = useState<string>('');
   // const [messages, setMessages] = useState<Array>([
   //   {
   //       _id: 1,
@@ -56,6 +61,16 @@ export default function ChatScreen({navigation, route}) {
 
   useEffect(() => {
 
+    switch (chatStatus) {
+      case 0:
+        setChatStatusText('Chat request pending');
+        break;
+      case -1:
+        setChatStatusText('This person blocked you');
+      default:
+        setChatStatusText('');
+        break;
+    }
     //let isMounted = true;
 
     navigation.addListener('focus', () => {
@@ -68,13 +83,11 @@ export default function ChatScreen({navigation, route}) {
         }
       });
 
-      let messageThreadId;
-      if (currentUserUID > selectedConnection._id)
-        messageThreadId = selectedConnection._id.concat(currentUserUID);
-      else
-        messageThreadId = currentUserUID.concat(selectedConnection._id);
+      let messageThreadId = GetThreadId(selectedConnection._id, currentUserUID);
 
       getChats(messageThreadId).then((data) => {
+        console.log(data);
+
         setMessages(data);
       })
 
@@ -90,11 +103,7 @@ export default function ChatScreen({navigation, route}) {
     //   }
     // });
 
-    let messageThreadId;
-    if (currentUserUID > selectedConnection._id)
-      messageThreadId = selectedConnection._id.concat(currentUserUID);
-    else
-      messageThreadId = currentUserUID.concat(selectedConnection._id);
+    let messageThreadId = GetThreadId(selectedConnection._id, currentUserUID);
 
     firebase
       .firestore()
@@ -105,6 +114,10 @@ export default function ChatScreen({navigation, route}) {
         querySnapshot.docChanges().forEach(change => {
           if (change.type === 'modified') {
             let arrObj = change.doc.data();
+            console.log(arrObj);
+
+            setChatStatus(arrObj.status);
+            setChatAcceptor(arrObj.acceptor);
             let arr = arrObj.chats;
             AsyncStorage.setItem('gmrl_chats_' + messageThreadId, JSON.stringify(arr));
             let addedMessage = arr[arr.length - 1];
@@ -146,7 +159,7 @@ export default function ChatScreen({navigation, route}) {
 
     //return () => { isMounted = false };
 
-  }, [navigation]);
+  }, [navigation, chatStatus]);
 
   function handleSend(type, content, isInverted) {
     console.log(type, content, isInverted, 'msg')
@@ -157,27 +170,28 @@ export default function ChatScreen({navigation, route}) {
   }
 
   const onSend = useCallback((mes = []) => {
-    mes[0].createdAt = mes[0].createdAt.toString();
-    //messages[0].pending = true;
-    //console.log(mes);
+    try {
+      mes[0].createdAt = mes[0].createdAt.toString();
+      //messages[0].pending = true;
+      //console.log(mes);
 
-    let messageThreadId;
-    if (currentUserUID > selectedConnection._id)
-      messageThreadId = selectedConnection._id.concat(currentUserUID);
-    else
-      messageThreadId = currentUserUID.concat(selectedConnection._id);
+      let messageThreadId = GetThreadId(selectedConnection._id, currentUserUID);
 
-    setMessages(previousMessages => GiftedChat.prepend(previousMessages, mes));
-    API.updateChats({messageThreadId: messageThreadId, messageObj: mes[0]}).
-      then((send) => {
-        console.log(send);
-        if (send) {
-          setDeliveryStatus(true);
-        }
-      })
-      .catch(error => {
-        console.log(error);
-      })
+      setMessages(previousMessages => GiftedChat.prepend(previousMessages, mes));
+      API.updateChats({messageThreadId: messageThreadId, messageObj: mes[0]}).
+        then((send) => {
+          console.log(send);
+          if (send) {
+            setDeliveryStatus(true);
+          }
+        })
+        .catch(error => {
+          console.log(error);
+        })
+    }
+    catch (error) {
+      console.log(error);
+    }
   }, [])
 
   function changeStatus(currentMessage) {
@@ -187,6 +201,31 @@ export default function ChatScreen({navigation, route}) {
       currentMessage.sent = true;
       setDeliveryStatus(false);
     }
+  }
+
+  async function initializeCall () {
+    Alert.alert(
+      'Call',
+      'Are you sure to start call?',
+      [
+        {text: 'NO', onPress: () => console.log('NO Pressed'), style: 'cancel'},
+        {text: 'YES', onPress: () => {
+          let connectyCubeUser = AsyncStorage.getItem('gmrl_connectycube_user');
+          navigation.navigate('Call', {selected: selectedConnection, connectyCubeUser: connectyCubeUser});
+        }},
+      ]
+    );
+  }
+
+  async function handleAcceptChat() {
+    let messageThreadId = GetThreadId(selectedConnection._id, currentUserUID);
+    setIsLoading(true);
+    let accepted = await API.acceptConnection(messageThreadId);
+    console.log(accepted);
+    if(accepted)
+      setIsLoading(false);
+    else
+      Alert.alert("Error", "Error accepting chat request");
   }
 
   return (
@@ -210,7 +249,9 @@ export default function ChatScreen({navigation, route}) {
         }
         rightComponent={
           <View style={{flexDirection: 'row'}}>
-            <TouchableOpacity>
+            <TouchableOpacity
+              onPress={initializeCall}
+            >
               <NIcon name='call' style={{fontSize: 18, color: Colors.colorWhite, marginLeft: 15}} />
             </TouchableOpacity>
             <TouchableOpacity>
@@ -242,6 +283,24 @@ export default function ChatScreen({navigation, route}) {
         inverted={false}
         maxInputLength={200}
         renderAvatar={null}
+        renderChatFooter={ () => (
+          chatStatus == 0 && chatAcceptor == currentUserUID ?
+            <TouchableOpacity
+              style={{alignSelf: 'center'}}
+              onPress={handleAcceptChat}
+            >
+              {isLoading ? (
+                <ActivityIndicator color={Colors.primaryColor} size='small'/>
+              ) : (
+                <Text style={{marginBottom: 10, fontStyle: 'italic', fontSize: 12, color: Colors.colorDark}}>Accept Chat Request</Text>
+              )
+              }
+            </TouchableOpacity>
+          :
+          chatStatus == 0 && chatAcceptor != currentUserUID ?
+            <Text style={{alignSelf: 'center', marginBottom: 10, fontStyle: 'italic', fontSize: 12, color: Colors.colorDark}}>{chatStatusText}</Text>
+          : null
+        )}
       />
       {/*{
         Platform.OS === 'android' && <KeyboardAvoidingView behavior="padding" />
