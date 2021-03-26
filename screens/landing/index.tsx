@@ -9,6 +9,7 @@ import Logo from '../../components/Logo';
 import ProfileView from '../../components/ProfileView';
 import {API} from '../../network';
 import ToDateTime from '../../functions/ToDateTime';
+import GetThreadId from '../../functions/GetThreadId';
 import useProfile from '../../hooks/useProfile';
 import updateProfile from '../../hooks/updateProfile';
 
@@ -31,13 +32,23 @@ export default function LandingScreen({navigation, route}) {
   const [profile, setProfile] = useState<Object>({});
   const [dob, setDob] = useState<Object>({});
   const [imageModal, setImageModal] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [imageCropper, setImageCropper] = useState<boolean>(false);
   const [cropperUri, setCropperUri] = useState<string>('');
   const [friendsLength, setFriendsLength] = useState(0);
+  const [usersList, setUsersList] = useState<array>([]);
+  const [viewUser, setViewUser] = useState<object>({});
+  const [addFriendText, setAddFriendText] = useState<string>('Add Friend');
 
   useEffect(() => {
 
     navigation.addListener('focus', () => {
+
+      API.getUsers({start: 0, end: 10})
+        .then((data) => {
+          setUsersList(data);
+        });
+
       if (API.isUser()) {
         useProfile().then((data) => {
           if (data !== null) {
@@ -119,7 +130,31 @@ export default function LandingScreen({navigation, route}) {
       Alert.alert("Error", res);
   }
 
-  function handleUserClick() {
+  function handleUserClick(user) {
+    console.log(user);
+    let u = user;
+    let dob = ToDateTime(u.dob.seconds);
+    u.dataArray = [{
+      title: 'Likes',
+      icon: 'heart-outline',
+      count: user.profileLikes
+    },
+    {
+      title: 'Friends',
+      icon: 'people-outline',
+      count: user.connectionsList.length
+    },
+    {
+      title: 'Age',
+      icon: 'aperture-outline',
+      count: dob.age
+    },
+    {
+      title: 'Gender',
+      icon: 'transgender-outline',
+      count: user.gender
+    }]
+    setViewUser(u);
     modalizeRef.current?.open();
   }
 
@@ -171,8 +206,8 @@ export default function LandingScreen({navigation, route}) {
 
         <SafeAreaView>
           <FlatGrid
-            itemDimension={100}
-            data={items}
+            itemDimension={150}
+            data={usersList}
             style={styles.gridView}
             // staticDimension={300}
             // fixed
@@ -180,12 +215,12 @@ export default function LandingScreen({navigation, route}) {
             renderItem={({ item }) => (
               <View style={styles.itemContainer}>
                 <TouchableOpacity
-                  onPress={handleUserClick}
+                  onPress={() => handleUserClick(item)}
                 >
                   <Image
                     style={{height: '100%', width: '100%'}}
                     source={{
-                      uri: 'https://reactnative.dev/img/tiny_logo.png',
+                      uri: item.photoURL,
                     }}
                   />
                 </TouchableOpacity>
@@ -210,14 +245,14 @@ export default function LandingScreen({navigation, route}) {
         }
       >
         <ProfileView
-          dataArray={dataArray}
-          username='Femi'
-          city='Abuja'
-          country='Nigeria'
+          dataArray={viewUser.dataArray}
+          username={viewUser.displayName}
+          city={viewUser.city}
+          country={viewUser.country}
           avatarSize="large"
-          avatarUri='https://randomuser.me/api/portraits/men/41.jpg'
-          genderInterest="Women"
-          about="Just in case this helps someone, this is how I fixed the error in my case. Just in case this helps someone, this is how I fixed the error in my case. Just in case this helps someone, this is how I fixed the error in my case."
+          avatarUri={viewUser.photoURL}
+          genderInterest={viewUser.genderInterest}
+          about={viewUser.aboutMe !== "" ? viewUser.aboutMe : ""}
           containerStyle={{marginTop: 10, marginBottom: 40}}
         />
         <View style={{flexDirection: 'row', justifyContent: 'space-between', marginBottom: 50}}>
@@ -228,9 +263,10 @@ export default function LandingScreen({navigation, route}) {
           </NButton>
           <NButton
             transparent
+            onPress={handleAddFriend}
             style={[styles.btnSmall, {borderColor: Colors.primaryColor, borderWidth: 1, marginLeft: 5}]}
           >
-            <Text style={{color: Colors.primaryColor}}>Add</Text>
+            <Text style={{color: Colors.primaryColor}}>{addFriendText}</Text>
           </NButton>
         </View>
       </Modalize>
@@ -251,6 +287,14 @@ export default function LandingScreen({navigation, route}) {
             </TouchableOpacity>
           </SafeAreaView>
         )}
+        FooterComponent={ ({imageIndex}) => (
+          <View>
+          {isLoading ? (
+            <ActivityIndicator color={Colors.colorWhite}/>
+          ) : null
+          }
+          </View>
+        )}
         backgroundColor={Colors.colorDark}
       />
       <ImageManipulator
@@ -269,19 +313,43 @@ export default function LandingScreen({navigation, route}) {
     </View>
   );
 
+  async function handleAddFriend() {
+    let messageThreadId = GetThreadId(viewUser._id, profile._id);
+    console.log(viewUser);
+    let data = {
+      messageThreadId: messageThreadId,
+      connection: viewUser,
+      con: profile
+    };
+    let addConnection = await API.addConnection(data);
+    console.log(addConnection);
+
+    if (addConnection) {
+      setAddFriendText('Added');
+    }
+    else {
+      Alert.alert("Error", "Error adding friend");
+    }
+  }
+
   async function handleSelectedImg(file){
     setImageCropper(false);
-
+    setIsLoading(true);
     let res = await API.updloadDp(file);
     if (res !== ""){
       let pp = profile;
       pp.photoURL = res;
       await updateProfile(pp);
+      setCropperUri(res);
+      setIsLoading(false);
       useProfile().then((data) => {
         console.log(data);
-
         setProfile(data);
       });
+    }
+    else {
+      setIsLoading(false);
+      Alert.alert("Error", "Error uploading new image");
     }
   }
 
@@ -316,7 +384,7 @@ const styles = StyleSheet.create({
   },
   itemContainer: {
     padding: 5,
-    height: 100,
+    height: 150,
   },
   btnSmall: {
     height: 30,

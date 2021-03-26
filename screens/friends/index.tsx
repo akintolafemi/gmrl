@@ -28,6 +28,7 @@ export default function FriendsScreen({navigation, route}) {
 
     navigation.addListener('focus', () => {
       API.getConnections().then((data) => {
+        console.log(data);
 
         if (data !== null)
           setConnectionList(data);

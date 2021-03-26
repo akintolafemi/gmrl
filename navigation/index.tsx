@@ -11,6 +11,7 @@ import SetDPScreen from '../screens/signup/SetDPScreen';
 import ForgotPasswordScreen from '../screens/password/forgotpasswordscreen';
 
 import ChatScreen from '../screens/friends/ChatScreen';
+import CallScreen from '../screens/friends/CallScreen';
 
 //billing
 import SetupBillingCardScreen from '../screens/billing/SetupBillingCardScreen';
@@ -95,6 +96,14 @@ function RootNavigator() {
       <Stack.Screen
         name="Chat"
         component={ChatScreen}
+        options={{
+          headerShown: false
+        }}
+        initialParams={{}}
+      />
+      <Stack.Screen
+        name="Call"
+        component={CallScreen}
         options={{
           headerShown: false
         }}

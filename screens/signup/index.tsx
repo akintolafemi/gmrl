@@ -38,19 +38,13 @@ export default function SignUpScreen({navigation, route}) {
 
   async function handleContinue() {
     let validateEmail = await FX.validateEmail(email);
-    let validatePassword = await FX.validatePassword(password);
+    //let validatePassword = await FX.validatePassword(password);
     if (username === "")
       Alert.alert("Error", "Create a username");
     else if (email === "")
       Alert.alert("Error", "Enter your email address");
     else if (!validateEmail)
       Alert.alert("Error", "Invalid email address");
-    else if (password === "")
-      Alert.alert("Error", "You have to create sign in password");
-    else if (!validatePassword)
-      Alert.alert("Error", "Password strength too low");
-    else if (confirmPassword !== password)
-      Alert.alert("Error", "Confirm password is empty or does not match")
     else if (country === "" || country === 0)
       Alert.alert("Error", "Select your country to continue");
     else if (city === "")
@@ -69,7 +63,6 @@ export default function SignUpScreen({navigation, route}) {
       let regObj = {
         email: email,
         username: username,
-        password: password,
         fullname: fullname,
         mobile: mobileX,
         country: countryList[country],
@@ -80,7 +73,7 @@ export default function SignUpScreen({navigation, route}) {
       let numLock = mobile.substr(mobileX.length - 5, mobileX.length - 1);
       console.log(mobileX);
 
-      let confirm = await API.sendTokenMobile(mobile, captchaRef.current);
+      let confirm = await API.sendTokenMobile(mobileX, captchaRef.current);
       console.log(confirm);
 
       setIsLoading(false);
@@ -150,36 +143,12 @@ export default function SignUpScreen({navigation, route}) {
           />
         </Item>
         <Item>
-          <NIcon name='lock' type="FontAwesome" style={styles.iconStyle} />
-          <NInput
-             placeholder="Create your password"
-             value={password}
-             onChangeText={text => setPassword(text)}
-             style={styles.inputStyle}
-             secureTextEntry={true}
-             returnKeyType="next"
-             keyboardType='default'
-          />
-        </Item>
-        <Item>
-          <NIcon name='thumb-tack' type="FontAwesome" style={styles.iconStyle} />
-          <NInput
-             placeholder="Help us confirm your password"
-             value={confirmPassword}
-             onChangeText={text => setConfirmPassword(text)}
-             style={styles.inputStyle}
-             secureTextEntry={true}
-             returnKeyType="done"
-             keyboardType='default'
-          />
-        </Item>
-        <Item>
           <NIcon name='globe' type="FontAwesome" style={styles.iconStyle} />
           <Picker
             mode="dropdown"
             iosHeader="Country"
             //iosIcon={<NIcon name="caret-down" style={{fontSize: 14}} />}
-            style={{  }}
+            style={{ height: 40 }}
             textStyle={{fontSize: 12}}
             selectedValue={country}
             onValueChange={handleCountrySelect}
@@ -195,7 +164,7 @@ export default function SignUpScreen({navigation, route}) {
             mode="dropdown"
             iosHeader="State/City"
             //iosIcon={<NIcon name="caret-down" style={{fontSize: 14}} />}
-            style={{  }}
+            style={{ height: 40 }}
             textStyle={{fontSize: 12}}
             selectedValue={city}
             onValueChange={value => setCity(value)}
